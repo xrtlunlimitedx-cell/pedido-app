@@ -1,0 +1,13 @@
+{
+  "name": "pedido-app",
+  "version": "1.0.0",
+  "description": "Aplicación de carga de pedidos para vendedores",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "better-sqlite3": "^11.0.0"
+  }
+}

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Pedidos</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>📦 Pedidos</h2>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item" data-section="nuevo-pedido">
+          <span class="nav-icon">📝</span>
+          <span>Nuevo Pedido</span>
+        </a>
+        <a href="#" class="nav-item" data-section="pedidos">
+          <span class="nav-icon">📋</span>
+          <span>Ver Pedidos</span>
+        </a>
+        <a href="#" class="nav-item" data-section="clientes">
+          <span class="nav-icon">👤</span>
+          <span>Clientes</span>
+        </a>
+        <a href="#" class="nav-item" data-section="productos">
+          <span class="nav-icon">📦</span>
+          <span>Productos</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- ==================== NUEVO PEDIDO ==================== -->
+      <section id="section-nuevo-pedido" class="section active">
+        <div class="section-header">
+          <h1>Nuevo Pedido</h1>
+        </div>
+
+        <div class="order-form">
+          <!-- Solapa: Cliente -->
+          <div class="accordion">
+            <div class="accordion-header" data-target="panel-cliente">
+              <h3>👤 Datos del Cliente</h3>
+              <span class="accordion-icon">▼</span>
+            </div>
+            <div class="accordion-panel" id="panel-cliente">
+              <div class="client-search">
+                <input type="text" id="buscar-cliente" placeholder="Buscar cliente por nombre..." autocomplete="off">
+                <div id="cliente-resultados" class="search-results hidden"></div>
+              </div>
+              <div id="cliente-seleccionado" class="selected-client hidden">
+                <div class="client-card">
+                  <h4 id="sel-cliente-nombre"></h4>
+                  <p>📍 <span id="sel-cliente-direccion"></span></p>
+                  <p>🕐 <span id="sel-cliente-horario"></span></p>
+                  <button class="btn btn-sm btn-danger" id="btn-deseleccionar-cliente">Cambiar Cliente</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Solapa: Items -->
+          <div class="accordion">
+            <div class="accordion-header" data-target="panel-items">
+              <h3>📦 Items del Pedido</h3>
+              <span class="accordion-icon">▼</span>
+            </div>
+            <div class="accordion-panel" id="panel-items">
+              <div class="item-form">
+                <div class="item-form-row">
+                  <div class="form-group">
+                    <label>Producto</label>
+                    <select id="item-producto">
+                      <option value="">Seleccionar producto...</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Cant. Bultos</label>
+                    <input type="number" id="item-bultos" min="1" value="1" step="1">
+                  </div>
+                  <div class="form-group">
+                    <label>Precio Venta ($)</label>
+                    <input type="number" id="item-precio" min="0" step="0.01" placeholder="0.00">
+                  </div>
+                  <div class="form-group">
+                    <label>Unid/Bulto</label>
+                    <input type="text" id="item-unidades" readonly class="readonly-field">
+                  </div>
+                  <div class="form-group">
+                    <label>Total Item</label>
+                    <input type="text" id="item-total-preview" readonly class="readonly-field total-preview" value="$ 0.00">
+                  </div>
+                  <button class="btn btn-primary" id="btn-agregar-item">+ Agregar</button>
+                </div>
+              </div>
+
+              <div class="items-table-container">
+                <table class="items-table" id="tabla-items">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Producto</th>
+                      <th>Unid/Bulto</th>
+                      <th>Bultos</th>
+                      <th>Precio Vta.</th>
+                      <th>Total</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="items-body">
+                  </tbody>
+                  <tfoot>
+                    <tr class="total-row">
+                      <td colspan="5"><strong>TOTAL DEL PEDIDO</strong></td>
+                      <td id="pedido-total"><strong>$ 0.00</strong></td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones de acción -->
+          <div class="form-actions">
+            <button class="btn btn-success btn-lg" id="btn-guardar-pedido">✅ Guardar Pedido</button>
+            <button class="btn btn-secondary btn-lg" id="btn-cancelar-pedido">❌ Cancelar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VER PEDIDOS ==================== -->
+      <section id="section-pedidos" class="section">
+        <div class="section-header">
+          <h1>Pedidos</h1>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Pedido #</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Dirección</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="pedidos-body">
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== CLIENTES ==================== -->
+      <section id="section-clientes" class="section">
+        <div class="section-header">
+          <h1>Clientes</h1>
+          <button class="btn btn-primary" id="btn-nuevo-cliente">+ Nuevo Cliente</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Dirección</th>
+                <th>Horario de Atención</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="clientes-body">
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== PRODUCTOS ==================== -->
+      <section id="section-productos" class="section">
+        <div class="section-header">
+          <h1>Productos</h1>
+          <button class="btn btn-primary" id="btn-nuevo-producto">+ Nuevo Producto</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Cantidad por Bulto</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="productos-body">
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal Genérico -->
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Título</h3>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+      </div>
+      <div class="modal-footer" id="modal-footer">
+        <button class="btn btn-secondary" id="modal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-confirm">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Detalle de Pedido (para imprimir) -->
+  <div class="modal-overlay hidden" id="pedido-detail-overlay">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3>Detalle del Pedido</h3>
+        <div class="modal-header-actions">
+          <button class="btn btn-primary" id="btn-imprimir-pedido">🖨️ Imprimir</button>
+          <button class="modal-close" id="pedido-detail-close">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body" id="pedido-detail-body">
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
