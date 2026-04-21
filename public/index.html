@@ -7,8 +7,29 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <div class="app-container">
-    <!-- Sidebar -->
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">📦</div>
+      <h2>Gestión de Pedidos</h2>
+      <p class="login-subtitle">Ingrese sus credenciales</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" id="login-username" placeholder="Nombre de usuario" required>
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="login-password" placeholder="Contraseña" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-full">Ingresar</button>
+        <p id="login-error" class="login-error hidden"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div class="app-container hidden" id="app-container">
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>📦 Pedidos</h2>
@@ -30,19 +51,27 @@
           <span class="nav-icon">📦</span>
           <span>Productos</span>
         </a>
+        <a href="#" class="nav-item" data-section="usuarios" id="nav-usuarios">
+          <span class="nav-icon">🔑</span>
+          <span>Usuarios</span>
+        </a>
       </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <span id="user-display-name">-</span>
+          <span id="user-display-role" class="badge badge-admin">admin</span>
+        </div>
+        <button class="btn btn-sm btn-secondary btn-full" id="btn-logout">Cerrar Sesión</button>
+      </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
-      <!-- ==================== NUEVO PEDIDO ==================== -->
+      <!-- NUEVO PEDIDO -->
       <section id="section-nuevo-pedido" class="section active">
         <div class="section-header">
           <h1>Nuevo Pedido</h1>
         </div>
-
         <div class="order-form">
-          <!-- Solapa: Cliente -->
           <div class="accordion">
             <div class="accordion-header" data-target="panel-cliente">
               <h3>👤 Datos del Cliente</h3>
@@ -64,7 +93,6 @@
             </div>
           </div>
 
-          <!-- Solapa: Items -->
           <div class="accordion">
             <div class="accordion-header" data-target="panel-items">
               <h3>📦 Items del Pedido</h3>
@@ -80,16 +108,16 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label>Cant. Bultos</label>
+                    <label>Bultos</label>
                     <input type="number" id="item-bultos" min="1" value="1" step="1">
                   </div>
                   <div class="form-group">
-                    <label>Precio Venta ($)</label>
-                    <input type="number" id="item-precio" min="0" step="0.01" placeholder="0.00">
+                    <label>Unid/Bulto</label>
+                    <input type="number" id="item-unidades" min="1" value="1" step="1">
                   </div>
                   <div class="form-group">
-                    <label>Unid/Bulto</label>
-                    <input type="text" id="item-unidades" readonly class="readonly-field">
+                    <label>Precio/Unidad ($)</label>
+                    <input type="number" id="item-precio" min="0" step="0.01" placeholder="0.00">
                   </div>
                   <div class="form-group">
                     <label>Total Item</label>
@@ -105,15 +133,14 @@
                     <tr>
                       <th>#</th>
                       <th>Producto</th>
-                      <th>Unid/Bulto</th>
                       <th>Bultos</th>
-                      <th>Precio Vta.</th>
+                      <th>Unid/Bulto</th>
+                      <th>Precio/Unid</th>
                       <th>Total</th>
                       <th></th>
                     </tr>
                   </thead>
-                  <tbody id="items-body">
-                  </tbody>
+                  <tbody id="items-body"></tbody>
                   <tfoot>
                     <tr class="total-row">
                       <td colspan="5"><strong>TOTAL DEL PEDIDO</strong></td>
@@ -126,7 +153,6 @@
             </div>
           </div>
 
-          <!-- Botones de acción -->
           <div class="form-actions">
             <button class="btn btn-success btn-lg" id="btn-guardar-pedido">✅ Guardar Pedido</button>
             <button class="btn btn-secondary btn-lg" id="btn-cancelar-pedido">❌ Cancelar</button>
@@ -134,7 +160,7 @@
         </div>
       </section>
 
-      <!-- ==================== VER PEDIDOS ==================== -->
+      <!-- VER PEDIDOS -->
       <section id="section-pedidos" class="section">
         <div class="section-header">
           <h1>Pedidos</h1>
@@ -147,18 +173,18 @@
                 <th>Fecha</th>
                 <th>Cliente</th>
                 <th>Dirección</th>
+                <th>Vendedor</th>
                 <th>Total</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
-            <tbody id="pedidos-body">
-            </tbody>
+            <tbody id="pedidos-body"></tbody>
           </table>
         </div>
       </section>
 
-      <!-- ==================== CLIENTES ==================== -->
+      <!-- CLIENTES -->
       <section id="section-clientes" class="section">
         <div class="section-header">
           <h1>Clientes</h1>
@@ -175,13 +201,12 @@
                 <th>Acciones</th>
               </tr>
             </thead>
-            <tbody id="clientes-body">
-            </tbody>
+            <tbody id="clientes-body"></tbody>
           </table>
         </div>
       </section>
 
-      <!-- ==================== PRODUCTOS ==================== -->
+      <!-- PRODUCTOS -->
       <section id="section-productos" class="section">
         <div class="section-header">
           <h1>Productos</h1>
@@ -197,8 +222,29 @@
                 <th>Acciones</th>
               </tr>
             </thead>
-            <tbody id="productos-body">
-            </tbody>
+            <tbody id="productos-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- USUARIOS (solo admin) -->
+      <section id="section-usuarios" class="section">
+        <div class="section-header">
+          <h1>Usuarios</h1>
+          <button class="btn btn-primary" id="btn-nuevo-usuario">+ Nuevo Usuario</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Usuario</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usuarios-body"></tbody>
           </table>
         </div>
       </section>
@@ -212,8 +258,7 @@
         <h3 id="modal-title">Título</h3>
         <button class="modal-close" id="modal-close">&times;</button>
       </div>
-      <div class="modal-body" id="modal-body">
-      </div>
+      <div class="modal-body" id="modal-body"></div>
       <div class="modal-footer" id="modal-footer">
         <button class="btn btn-secondary" id="modal-cancel">Cancelar</button>
         <button class="btn btn-primary" id="modal-confirm">Guardar</button>
@@ -221,7 +266,7 @@
     </div>
   </div>
 
-  <!-- Modal de Detalle de Pedido (para imprimir) -->
+  <!-- Modal Detalle Pedido -->
   <div class="modal-overlay hidden" id="pedido-detail-overlay">
     <div class="modal modal-lg">
       <div class="modal-header">
@@ -231,14 +276,11 @@
           <button class="modal-close" id="pedido-detail-close">&times;</button>
         </div>
       </div>
-      <div class="modal-body" id="pedido-detail-body">
-      </div>
+      <div class="modal-body" id="pedido-detail-body"></div>
     </div>
   </div>
 
-  <!-- Toast -->
   <div class="toast-container" id="toast-container"></div>
-
   <script src="/js/app.js"></script>
 </body>
 </html>

@@ -1,3 +1,56 @@
+/* ==================== LOGIN ==================== */
+.login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.login-logo { font-size: 3rem; margin-bottom: 8px; }
+
+.login-card h2 { color: #1e293b; margin-bottom: 4px; }
+
+.login-subtitle { color: #64748b; margin-bottom: 24px; font-size: 0.9rem; }
+
+.login-card .form-group { margin-bottom: 16px; text-align: left; }
+
+.login-card .form-group label { display: block; margin-bottom: 6px; }
+
+.login-card .form-group input { width: 100%; }
+
+.login-error { color: #ef4444; margin-top: 12px; font-size: 0.85rem; }
+
+.btn-full { width: 100%; justify-content: center; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid #334155;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.badge-admin { background: #3b82f6; color: #fff; }
+.badge-vendedor { background: #8b5cf6; color: #fff; }
+
 /* ==================== RESET & BASE ==================== */
 * {
   margin: 0;
