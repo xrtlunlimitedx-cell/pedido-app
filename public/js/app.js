@@ -98,6 +98,7 @@ function navigateTo(section) {
   if (section === 'pedidos') loadPedidos();
   if (section === 'nuevo-pedido') loadProductosSelect();
   if (section === 'usuarios' && state.user.rol === 'admin') loadUsuarios();
+  if (section === 'reportes') loadReportes();
 }
 
 function setupAccordion() {
@@ -357,6 +358,79 @@ function cancelarPedido() {
   document.getElementById('item-producto').value = ''; document.getElementById('item-bultos').value = 1;
   document.getElementById('item-unidades').value = 1; document.getElementById('item-precio').value = '';
   document.getElementById('item-total-preview').value = '$ 0.00';
+}
+
+// ==================== REPORTES ====================
+function loadReportes() {
+  const now = new Date();
+  document.getElementById('reporte-mes').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  if (state.user.rol === 'admin') {
+    loadUsuarios().then(() => {
+      const sel = document.getElementById('reporte-vendedor');
+      sel.innerHTML = '<option value="">Todos</option>' + state.usuarios.map(u => `<option value="${u.id}">${esc(u.nombre)}</option>`).join('');
+    });
+    document.getElementById('filtro-vendedor-group').classList.remove('hidden');
+  } else {
+    document.getElementById('filtro-vendedor-group').classList.add('hidden');
+  }
+  document.getElementById('btn-generar-reporte').onclick = generarReporte;
+  generarReporte();
+}
+
+async function generarReporte() {
+  const mes = document.getElementById('reporte-mes').value;
+  const vendedor = document.getElementById('reporte-vendedor')?.value || '';
+  let url = `/api/reportes/ventas?mes=${mes}`;
+  if (vendedor) url += `&vendedor_id=${vendedor}`;
+  try {
+    const res = await api('GET', url);
+    const data = await res.json();
+    renderReportes(data);
+  } catch { showToast('Error al generar reporte', 'error'); }
+}
+
+function renderReportes(data) {
+  const container = document.getElementById('reportes-resultado');
+  let html = '';
+  // Summary cards
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">`;
+  html += `<div style="background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
+    <div style="font-size:0.85rem;color:#64748b;font-weight:600;">CANT. PEDIDOS</div>
+    <div style="font-size:2rem;font-weight:700;color:#1e293b;">${data.cantidadPedidos}</div>
+  </div>`;
+  html += `<div style="background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
+    <div style="font-size:0.85rem;color:#64748b;font-weight:600;">TOTAL VENTAS</div>
+    <div style="font-size:2rem;font-weight:700;color:#059669;">$ ${fmtNum(data.totalGeneral)}</div>
+  </div>`;
+  html += `</div>`;
+
+  // Por vendedor (admin only)
+  if (data.porVendedor && data.porVendedor.length > 0) {
+    html += `<div style="background:#fff;border-radius:10px;padding:20px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+      <h3 style="margin-bottom:16px;color:#1e293b;">🏆 Ventas por Vendedor</h3>
+      <table class="data-table"><thead><tr><th>Vendedor</th><th>Pedidos</th><th>Total</th><th>Rendimiento</th></tr></thead><tbody>`;
+    const maxTotal = Math.max(...data.porVendedor.map(v => v.total), 1);
+    data.porVendedor.forEach(v => {
+      const pct = Math.round((v.total / maxTotal) * 100);
+      html += `<tr><td><strong>${esc(v.nombre)}</strong></td><td>${v.cantidad}</td><td><strong>$ ${fmtNum(v.total)}</strong></td>
+        <td><div style="background:#e2e8f0;border-radius:4px;height:20px;position:relative;min-width:100px;">
+          <div style="background:linear-gradient(90deg,#22c55e,#16a34a);height:100%;border-radius:4px;width:${pct}%;"></div>
+        </div></td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  // Pedidos detail
+  html += `<div style="background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+    <h3 style="padding:16px 20px 0;color:#1e293b;">Detalle de Pedidos</h3>
+    <table class="data-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Vendedor</th><th>Total</th><th>Estado</th></tr></thead><tbody>`;
+  data.pedidos.forEach(p => {
+    html += `<tr><td><strong>PED-${String(p.id).padStart(4,'0')}</strong></td><td>${fmtDate(p.fecha)}</td><td>${esc(p.cliente_nombre)}</td><td>${esc(p.vendedor_nombre)}</td><td><strong>$ ${fmtNum(p.total)}</strong></td><td><span class="badge badge-${p.estado}">${cap(p.estado)}</span></td></tr>`;
+  });
+  if (data.pedidos.length === 0) html += `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px;">No hay pedidos para este período</td></tr>`;
+  html += `</tbody></table></div>`;
+
+  container.innerHTML = html;
 }
 
 // ==================== MODAL ====================

@@ -230,6 +230,57 @@ app.delete('/api/pedidos/:id', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ==================== REPORTES ====================
+
+app.get('/api/reportes/ventas', authMiddleware, async (req, res) => {
+  try {
+    const { mes, vendedor_id } = req.query;
+    let query = `
+      SELECT p.id, p.fecha, p.total, p.estado,
+             c.nombre as cliente_nombre,
+             u.nombre as vendedor_nombre, u.id as vendedor_id
+      FROM pedidos p
+      JOIN clientes c ON p.cliente_id = c.id
+      JOIN usuarios u ON p.vendedor_id = u.id
+      WHERE 1=1
+    `;
+    let params = [];
+
+    if (mes) {
+      query += ' AND p.fecha LIKE ?';
+      params.push(mes + '%');
+    }
+
+    if (vendedor_id) {
+      query += ' AND p.vendedor_id = ?';
+      params.push(vendedor_id);
+    } else if (req.user.rol !== 'admin') {
+      query += ' AND p.vendedor_id = ?';
+      params.push(req.user.id);
+    }
+
+    query += ' ORDER BY p.fecha DESC';
+    const pedidos = await db.all(query, params);
+
+    const totalGeneral = pedidos.reduce((sum, p) => sum + Number(p.total), 0);
+    const cantidadPedidos = pedidos.length;
+
+    // Totales por vendedor
+    let porVendedor = [];
+    if (req.user.rol === 'admin') {
+      const vendedorMap = {};
+      pedidos.forEach(p => {
+        if (!vendedorMap[p.vendedor_nombre]) vendedorMap[p.vendedor_nombre] = { nombre: p.vendedor_nombre, total: 0, cantidad: 0 };
+        vendedorMap[p.vendedor_nombre].total += Number(p.total);
+        vendedorMap[p.vendedor_nombre].cantidad++;
+      });
+      porVendedor = Object.values(vendedorMap).sort((a, b) => b.total - a.total);
+    }
+
+    res.json({ pedidos, totalGeneral, cantidadPedidos, porVendedor });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ==================== USUARIOS (solo admin) ====================
 
 app.get('/api/usuarios', authMiddleware, adminMiddleware, async (req, res) => {

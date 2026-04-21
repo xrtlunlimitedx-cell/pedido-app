@@ -43,6 +43,10 @@
           <span class="nav-icon">📋</span>
           <span>Ver Pedidos</span>
         </a>
+        <a href="#" class="nav-item" data-section="reportes" id="nav-reportes">
+          <span class="nav-icon">📊</span>
+          <span>Reportes</span>
+        </a>
         <a href="#" class="nav-item" data-section="clientes">
           <span class="nav-icon">👤</span>
           <span>Clientes</span>
@@ -225,6 +229,27 @@
             <tbody id="productos-body"></tbody>
           </table>
         </div>
+      </section>
+
+      <!-- REPORTES -->
+      <section id="section-reportes" class="section">
+        <div class="section-header">
+          <h1>📊 Reportes de Ventas</h1>
+        </div>
+        <div class="reportes-filtros" style="background:#fff;border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="form-group">
+            <label>Mes</label>
+            <input type="month" id="reporte-mes" style="padding:8px 12px;border:2px solid #e2e8f0;border-radius:6px;font-size:0.9rem;">
+          </div>
+          <div class="form-group" id="filtro-vendedor-group">
+            <label>Vendedor</label>
+            <select id="reporte-vendedor" style="padding:8px 12px;border:2px solid #e2e8f0;border-radius:6px;font-size:0.9rem;">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btn-generar-reporte">🔍 Generar Reporte</button>
+        </div>
+        <div id="reportes-resultado"></div>
       </section>
 
       <!-- USUARIOS (solo admin) -->
