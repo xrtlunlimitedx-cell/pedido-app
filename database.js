@@ -33,7 +33,8 @@ const CREATE_TABLES = `
     vendedor_id INTEGER NOT NULL REFERENCES usuarios(id),
     fecha TEXT NOT NULL,
     total DOUBLE PRECISION NOT NULL DEFAULT 0,
-    estado TEXT NOT NULL DEFAULT 'pendiente'
+    estado TEXT NOT NULL DEFAULT 'pendiente',
+    comentarios TEXT NOT NULL DEFAULT ''
   );
   CREATE TABLE IF NOT EXISTS pedido_items (
     id SERIAL PRIMARY KEY,

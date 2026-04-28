@@ -216,7 +216,15 @@ async function loadPedidos() {
 
 function renderPedidos(pedidos) {
   const tbody = document.getElementById('pedidos-body'); if (!tbody) return;
-  tbody.innerHTML = pedidos.map(p => `<tr><td><strong>PED-${String(p.id).padStart(4,'0')}</strong></td><td>${fmtDate(p.fecha)}</td><td>${esc(p.cliente_nombre)}</td><td>${esc(p.cliente_direccion)}</td><td>${esc(p.vendedor_nombre)}</td><td><strong>$ ${fmtNum(p.total)}</strong></td><td><span class="badge badge-${p.estado}">${cap(p.estado)}</span></td><td><button class="btn btn-sm btn-primary" onclick="viewPedido(${p.id})">👁️</button> <button class="btn btn-sm btn-success" onclick="changeEstado(${p.id},'entregado')">✅</button> <button class="btn btn-sm btn-danger" onclick="deletePedido(${p.id})">🗑️</button></td></tr>`).join('');
+  const statusBtns = [
+    { val: 'pendiente', lbl: '⏳ Pend.' }, { val: 'entregado', lbl: '✅ Entr.' },
+    { val: 'entregado-pagado', lbl: '💰 Pagado' }, { val: 'entregado-firmado', lbl: '📝 Firmado' },
+    { val: 'entregado-transferido', lbl: '🏦 Transf.' }, { val: 'cancelado', lbl: '❌ Canc.' }
+  ];
+  tbody.innerHTML = pedidos.map(p => {
+    const badgeLabel = {'pendiente':'Pendiente','entregado':'Entregado','entregado-pagado':'Entregado (Pagado)','entregado-firmado':'Entregado (Firmado)','entregado-transferido':'Entregado (Transferido)','cancelado':'Cancelado'};
+    return `<tr><td><strong>PED-${String(p.id).padStart(4,'0')}</strong></td><td>${fmtDate(p.fecha)}</td><td>${esc(p.cliente_nombre)}</td><td>${esc(p.cliente_direccion)}</td><td>${esc(p.vendedor_nombre)}</td><td><strong>$ ${fmtNum(p.total)}</strong></td><td><span class="badge badge-${p.estado.replace(/-/g,'-')}">${badgeLabel[p.estado]||cap(p.estado)}</span>${p.comentarios?' <span title="'+esc(p.comentarios)+'">💬</span>':''}</td><td class="actions-cell"><div class="actions-row"><button class="btn btn-sm btn-primary" onclick="viewPedido(${p.id})" title="Ver">👁️</button> <button class="btn btn-sm btn-warning" onclick="editPedido(${p.id})" title="Editar">✏️</button> <button class="btn btn-sm btn-info" onclick="comentariosPedido(${p.id})" title="Comentarios">💬</button> <button class="btn btn-sm btn-success" onclick="statusPedido(${p.id},'${p.estado}')" title="Cambiar Estado">🔄</button> <button class="btn btn-sm btn-danger" onclick="deletePedido(${p.id})" title="Eliminar">🗑️</button></div></td></tr>`;
+  }).join('');
 }
 
 async function viewPedido(id) {
@@ -254,8 +262,88 @@ function printPedido() {
   win.document.close(); setTimeout(() => win.print(), 300);
 }
 
-async function changeEstado(id, estado) { await api('PUT', `/api/pedidos/${id}/estado`, { estado }); showToast(`Estado: ${estado}`, 'success'); loadPedidos(); }
+async function changeEstado(id, estado) { await api('PUT', `/api/pedidos/${id}/estado`, { estado }); showToast('Estado actualizado', 'success'); loadPedidos(); }
 async function deletePedido(id) { if (!confirm('¿Eliminar pedido?')) return; await api('DELETE', `/api/pedidos/${id}`); showToast('Eliminado', 'success'); loadPedidos(); }
+
+// Comments modal
+async function comentariosPedido(id) {
+  try {
+    const res = await api('GET', `/api/pedidos/${id}`);
+    const pedido = await res.json();
+    openModal('💬 Comentarios / Observaciones', `
+      <input type="hidden" id="modal-edit-id" value="${pedido.id}">
+      <div style="margin-bottom:12px;padding:12px;background:#f8fafc;border-radius:8px;font-size:0.85rem;">
+        <strong>PED-${String(pedido.id).padStart(4,'0')}</strong> — ${esc(pedido.cliente_nombre)} — $ ${fmtNum(pedido.total)}
+      </div>
+      <div class="form-group">
+        <label>Comentarios / Observaciones</label>
+        <textarea id="modal-comentarios" rows="5" style="width:100%;padding:10px;border:2px solid #e2e8f0;border-radius:6px;font-size:0.9rem;resize:vertical;" placeholder="Agregar comentarios u observaciones sobre este pedido...">${esc(pedido.comentarios||'')}</textarea>
+      </div>
+    `, async () => {
+      const txt = document.getElementById('modal-comentarios').value;
+      await api('PUT', `/api/pedidos/${document.getElementById('modal-edit-id').value}/comentarios`, { comentarios: txt });
+      closeModal(); showToast('Comentarios guardados', 'success'); loadPedidos();
+    });
+  } catch {}
+}
+
+// Status change modal
+function statusPedido(id, currentStatus) {
+  const statuses = [
+    { val: 'pendiente', lbl: '⏳ Pendiente', color: '#f59e0b' },
+    { val: 'entregado', lbl: '✅ Entregado', color: '#22c55e' },
+    { val: 'entregado-pagado', lbl: '💰 Entregado (Pagado)', color: '#3b82f6' },
+    { val: 'entregado-firmado', lbl: '📝 Entregado (Firmado)', color: '#8b5cf6' },
+    { val: 'entregado-transferido', lbl: '🏦 Entregado (Transferido)', color: '#06b6d4' },
+    { val: 'cancelado', lbl: '❌ Cancelado', color: '#ef4444' }
+  ];
+  const btns = statuses.map(s =>
+    `<button class="btn${s.val===currentStatus?' btn-current':''}" style="display:flex;align-items:center;gap:8px;width:100%;padding:12px;margin-bottom:8px;background:${s.val===currentStatus?s.color+'22':'#f8fafc'};border:2px solid ${s.val===currentStatus?s.color:'#e2e8f0'};border-radius:8px;cursor:pointer;font-size:0.95rem;${s.val===currentStatus?'font-weight:700;':''}" onclick="changeEstado(${id},'${s.val}');closeModal();">${s.lbl}</button>`
+  ).join('');
+  openModal('🔄 Cambiar Estado del Pedido', `
+    <div style="margin-bottom:12px;font-size:0.85rem;color:#64748b;">Seleccione el nuevo estado:</div>
+    ${btns}
+  `, null);
+  document.getElementById('modal-footer').classList.add('hidden');
+  const restoreFooter = () => { document.getElementById('modal-footer').classList.remove('hidden'); };
+  document.getElementById('modal-close').addEventListener('click', restoreFooter, { once: true });
+  document.getElementById('modal-cancel').addEventListener('click', restoreFooter, { once: true });
+}
+
+// Edit order - loads order into edit mode
+async function editPedido(id) {
+  try {
+    const res = await api('GET', `/api/pedidos/${id}`);
+    const pedido = await res.json();
+    // Navigate to nuevo-pedido and populate
+    navigateTo('nuevo-pedido');
+    state.pedidoItems = pedido.items.map(it => ({
+      producto_id: it.producto_id, producto_nombre: it.producto_nombre,
+      cantidad_bultos: it.cantidad_bultos, unidades_por_bulto: it.unidades_por_bulto,
+      precio_unidad: it.precio_unidad, total: it.total
+    }));
+    seleccionarCliente(pedido.cliente_id);
+    renderPedidoItems();
+    // Change save button to update mode
+    const btnSave = document.getElementById('btn-guardar-pedido');
+    btnSave.textContent = '💾 Actualizar Pedido';
+    btnSave.onclick = async () => {
+      if (!state.clienteSeleccionado) { showToast('Seleccione cliente', 'error'); return; }
+      if (!state.pedidoItems.length) { showToast('Agregue items', 'error'); return; }
+      try {
+        const res = await api('PUT', `/api/pedidos/${id}`, {
+          cliente_id: state.clienteSeleccionado.id,
+          items: state.pedidoItems.map(it => ({ producto_id: it.producto_id, cantidad_bultos: it.cantidad_bultos, unidades_por_bulto: it.unidades_por_bulto, precio_unidad: it.precio_unidad })),
+          comentarios: ''
+        });
+        const data = await res.json();
+        if (data.success) { showToast('Pedido actualizado', 'success'); cancelarPedido(); navigateTo('pedidos'); }
+        else showToast(data.error || 'Error', 'error');
+      } catch { showToast('Error de conexión', 'error'); }
+    };
+    showToast(`Editando PED-${String(id).padStart(4,'0')}`, 'info');
+  } catch {}
+}
 
 // ==================== NUEVO PEDIDO FORM ====================
 function setupPedidoForm() {

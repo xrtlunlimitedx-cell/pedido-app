@@ -189,6 +189,7 @@ app.post('/api/pedidos', authMiddleware, async (req, res) => {
     if (!cliente_id) return res.status(400).json({ error: 'Seleccione un cliente' });
     if (!items || items.length === 0) return res.status(400).json({ error: 'Agregue al menos un item' });
 
+    const comentarios = req.body.comentarios || '';
     const fecha = new Date().toISOString();
     let total = 0;
     items.forEach(item => {
@@ -198,8 +199,8 @@ app.post('/api/pedidos', authMiddleware, async (req, res) => {
 
     const pedidoId = await db.withTransaction(async (tx) => {
       const result = await tx.run(
-        'INSERT INTO pedidos (cliente_id, vendedor_id, fecha, total, estado) VALUES (?, ?, ?, ?, ?)',
-        [cliente_id, req.user.id, fecha, total, 'pendiente']
+        'INSERT INTO pedidos (cliente_id, vendedor_id, fecha, total, estado, comentarios) VALUES (?, ?, ?, ?, ?, ?)',
+        [cliente_id, req.user.id, fecha, total, 'pendiente', comentarios]
       );
       const id = result.lastInsertRowid;
       for (const item of items) {
@@ -226,6 +227,52 @@ app.delete('/api/pedidos/:id', authMiddleware, async (req, res) => {
   try {
     await db.run('DELETE FROM pedido_items WHERE pedido_id = ?', [req.params.id]);
     await db.run('DELETE FROM pedidos WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Edit order - update items and recalculate total
+app.put('/api/pedidos/:id', authMiddleware, async (req, res) => {
+  try {
+    const { cliente_id, items, comentarios } = req.body;
+    if (!cliente_id) return res.status(400).json({ error: 'Seleccione un cliente' });
+    if (!items || items.length === 0) return res.status(400).json({ error: 'Agregue al menos un item' });
+
+    // Check permission
+    const pedido = await db.get('SELECT * FROM pedidos WHERE id = ?', [req.params.id]);
+    if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado' });
+    if (req.user.rol !== 'admin' && pedido.vendedor_id !== req.user.id) {
+      return res.status(403).json({ error: 'No tiene permiso para editar este pedido' });
+    }
+
+    let total = 0;
+    items.forEach(item => {
+      item.total = item.cantidad_bultos * item.unidades_por_bulto * item.precio_unidad;
+      total += item.total;
+    });
+
+    const comentariosFinal = comentarios !== undefined ? comentarios : pedido.comentarios;
+
+    await db.withTransaction(async (tx) => {
+      await tx.run('DELETE FROM pedido_items WHERE pedido_id = ?', [req.params.id]);
+      await tx.run('UPDATE pedidos SET cliente_id = ?, total = ?, comentarios = ? WHERE id = ?',
+        [cliente_id, total, comentariosFinal, req.params.id]);
+      for (const item of items) {
+        await tx.run(
+          'INSERT INTO pedido_items (pedido_id, producto_id, cantidad_bultos, unidades_por_bulto, precio_unidad, total) VALUES (?, ?, ?, ?, ?, ?)',
+          [req.params.id, item.producto_id, item.cantidad_bultos, item.unidades_por_bulto, item.precio_unidad, item.total]
+        );
+      }
+    });
+
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Update comments
+app.put('/api/pedidos/:id/comentarios', authMiddleware, async (req, res) => {
+  try {
+    await db.run('UPDATE pedidos SET comentarios = ? WHERE id = ?', [req.body.comentarios || '', req.params.id]);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
