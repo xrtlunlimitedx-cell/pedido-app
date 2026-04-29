@@ -77,6 +77,8 @@ if (isProduction) {
   });
 
   pool.query(CREATE_TABLES).then(() => {
+    // Add comentarios column if not exists (migration)
+    pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comentarios TEXT NOT NULL DEFAULT ''`).catch(() => {});
     pool.query(SEED_USUARIOS).catch(() => {});
     pool.query('SELECT COUNT(*) as count FROM clientes').then(res => {
       if (parseInt(res.rows[0].count) === 0) pool.query(SEED_CLIENTES).catch(() => {});
