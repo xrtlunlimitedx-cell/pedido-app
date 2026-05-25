@@ -70,8 +70,14 @@ function setupUI() {
   roleBadge.className = `badge badge-${state.user.rol}`;
 
   const navUsuarios = document.getElementById('nav-usuarios');
-  if (state.user.rol !== 'admin') navUsuarios.classList.add('hidden');
-  else navUsuarios.classList.remove('hidden');
+  const navLogistica = document.getElementById('nav-logistica');
+  const navTareas = document.getElementById('nav-tareas');
+  if (state.user.rol !== 'admin') {
+    navUsuarios.classList.add('hidden'); navLogistica.classList.add('hidden'); navTareas.classList.add('hidden');
+  } else {
+    navUsuarios.classList.remove('hidden'); navLogistica.classList.remove('hidden'); navTareas.classList.remove('hidden');
+    checkUrgentCount();
+  }
 
   document.getElementById('btn-logout').addEventListener('click', logout);
   setupNavigation();
@@ -99,6 +105,8 @@ function navigateTo(section) {
   if (section === 'nuevo-pedido') loadProductosSelect();
   if (section === 'usuarios' && state.user.rol === 'admin') loadUsuarios();
   if (section === 'reportes') loadReportes();
+  if (section === 'logistica' && state.user.rol === 'admin') loadLogistica();
+  if (section === 'tareas' && state.user.rol === 'admin') loadTareas();
 }
 
 function setupAccordion() {
@@ -520,6 +528,209 @@ function renderReportes(data) {
 
   container.innerHTML = html;
 }
+
+// ==================== LOGISTICA ====================
+async function loadLogistica() {
+  try {
+    const res = await api('GET', '/api/logistica');
+    const items = await res.json();
+    renderLogistica(items);
+  } catch {}
+  document.getElementById('btn-nueva-logistica').onclick = nuevaLogistica;
+}
+
+function renderLogistica(items) {
+  const tbody = document.getElementById('logistica-body');
+  const estBadge = {'pendiente':'Pendiente','en-proceso':'En Proceso','finalizado':'Finalizado','cancelado':'Cancelado'};
+  tbody.innerHTML = items.map(l => `<tr>
+    <td>${l.id}</td><td><strong>${esc(l.cliente)}</strong></td><td>${fmtDate(l.fecha)}</td>
+    <td>${l.horas}</td><td>$ ${fmtNum(l.valor_hora)}</td><td>${esc(l.ayudante)}</td>
+    <td><strong>$ ${fmtNum(l.total)}</strong></td>
+    <td><span class="badge badge-${l.estado}">${estBadge[l.estado]||cap(l.estado)}</span></td>
+    <td><button class="btn btn-sm btn-primary" onclick="editLogistica(${l.id})">✏️</button> <button class="btn btn-sm btn-danger" onclick="deleteLogistica(${l.id})">🗑️</button></td>
+  </tr>`).join('');
+}
+
+function nuevaLogistica() {
+  openModal('🚛 Nuevo Registro de Logística', `
+    <div class="form-group"><label>Cliente</label><input type="text" id="modal-campo1" required placeholder="Nombre del cliente"></div>
+    <div class="form-group"><label>Fecha</label><input type="date" id="modal-campo2" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Horas trabajadas</label><input type="number" id="modal-campo3" min="0" step="0.5" value="0"></div>
+      <div class="form-group"><label>Valor por hora ($)</label><input type="number" id="modal-campo4" min="0" step="0.01" value="0"></div>
+    </div>
+    <div class="form-group"><label>Ayudante</label><input type="text" id="modal-campo5" placeholder="Nombre del ayudante (opcional)"></div>
+    <div class="form-group"><label>Observaciones</label><textarea id="modal-campo6" rows="3" style="width:100%;padding:8px;border:2px solid #e2e8f0;border-radius:6px;resize:vertical;" placeholder="Observaciones..."></textarea></div>
+  `, async () => {
+    const cliente = document.getElementById('modal-campo1').value.trim();
+    if (!cliente) { showToast('Cliente requerido', 'error'); return; }
+    const res = await api('POST', '/api/logistica', {
+      cliente, fecha: document.getElementById('modal-campo2').value,
+      horas: parseFloat(document.getElementById('modal-campo3').value) || 0,
+      valor_hora: parseFloat(document.getElementById('modal-campo4').value) || 0,
+      ayudante: document.getElementById('modal-campo5').value.trim(),
+      observaciones: document.getElementById('modal-campo6').value.trim()
+    });
+    if (res.ok) { closeModal(); showToast('Registro guardado', 'success'); loadLogistica(); }
+  });
+}
+
+async function editLogistica(id) {
+  try {
+    const res = await api('GET', '/api/logistica');
+    const items = await res.json();
+    const l = items.find(x => x.id === id); if (!l) return;
+    openModal('✏️ Editar Registro', `
+      <input type="hidden" id="modal-edit-id" value="${l.id}">
+      <div class="form-group"><label>Cliente</label><input type="text" id="modal-campo1" value="${esc(l.cliente)}"></div>
+      <div class="form-group"><label>Fecha</label><input type="date" id="modal-campo2" value="${l.fecha.split('T')[0]}"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group"><label>Horas</label><input type="number" id="modal-campo3" min="0" step="0.5" value="${l.horas}"></div>
+        <div class="form-group"><label>$/Hora</label><input type="number" id="modal-campo4" min="0" step="0.01" value="${l.valor_hora}"></div>
+      </div>
+      <div class="form-group"><label>Ayudante</label><input type="text" id="modal-campo5" value="${esc(l.ayudante)}"></div>
+      <div class="form-group"><label>Estado</label><select id="modal-campo7">
+        <option value="pendiente" ${l.estado==='pendiente'?'selected':''}>Pendiente</option>
+        <option value="en-proceso" ${l.estado==='en-proceso'?'selected':''}>En Proceso</option>
+        <option value="finalizado" ${l.estado==='finalizado'?'selected':''}>Finalizado</option>
+        <option value="cancelado" ${l.estado==='cancelado'?'selected':''}>Cancelado</option>
+      </select></div>
+      <div class="form-group"><label>Observaciones</label><textarea id="modal-campo6" rows="3" style="width:100%;padding:8px;border:2px solid #e2e8f0;border-radius:6px;resize:vertical;">${esc(l.observaciones)}</textarea></div>
+    `, async () => {
+      await api('PUT', `/api/logistica/${document.getElementById('modal-edit-id').value}`, {
+        cliente: document.getElementById('modal-campo1').value.trim(),
+        fecha: document.getElementById('modal-campo2').value,
+        horas: parseFloat(document.getElementById('modal-campo3').value) || 0,
+        valor_hora: parseFloat(document.getElementById('modal-campo4').value) || 0,
+        ayudante: document.getElementById('modal-campo5').value.trim(),
+        estado: document.getElementById('modal-campo7').value,
+        observaciones: document.getElementById('modal-campo6').value.trim()
+      });
+      closeModal(); showToast('Actualizado', 'success'); loadLogistica();
+    });
+  } catch {}
+}
+
+async function deleteLogistica(id) { if (!confirm('¿Eliminar registro?')) return; await api('DELETE', `/api/logistica/${id}`); showToast('Eliminado', 'success'); loadLogistica(); }
+
+// ==================== TAREAS / PLANIFICACION ====================
+let tareasData = [];
+
+async function checkUrgentCount() {
+  try {
+    const res = await api('GET', '/api/tareas/urgent-count');
+    const data = await res.json();
+    const badge = document.getElementById('urgent-badge');
+    if (data.count > 0) { badge.textContent = data.count; badge.classList.remove('hidden'); }
+    else { badge.classList.add('hidden'); }
+  } catch {}
+}
+
+async function loadTareas() {
+  try {
+    const res = await api('GET', '/api/tareas');
+    tareasData = await res.json();
+    renderTareas();
+  } catch {}
+  document.getElementById('btn-nueva-tarea').onclick = nuevaTarea;
+  document.getElementById('tarea-filter-estado').onchange = renderTareas;
+  document.getElementById('tarea-filter-cat').onchange = renderTareas;
+}
+
+function renderTareas() {
+  const container = document.getElementById('tareas-container');
+  const filterEstado = document.getElementById('tarea-filter-estado').value;
+  const filterCat = document.getElementById('tarea-filter-cat').value;
+  let filtered = tareasData;
+  if (filterEstado) filtered = filtered.filter(t => t.estado === filterEstado);
+  if (filterCat) filtered = filtered.filter(t => t.categoria === filterCat);
+
+  const estColor = {'pendiente':'#f59e0b','en-proceso':'#3b82f6','finalizado':'#22c55e'};
+  const estLabel = {'pendiente':'Pendiente','en-proceso':'En Proceso','finalizado':'Finalizado'};
+
+  container.innerHTML = filtered.length === 0 ? '<div style="text-align:center;color:#94a3b8;padding:40px;font-size:1.1rem;">No hay tareas</div>' :
+    filtered.map(t => `<div class="tarea-card${t.urgente&&t.estado!=='finalizado'?' tarea-urgente':''}" style="border-left:4px solid ${estColor[t.estado]||'#94a3b8'};">
+      <div class="tarea-header">
+        <div><strong>${esc(t.titulo)}</strong>
+          ${t.urgente&&t.estado!=='finalizado'?'<span style="background:#ef4444;color:#fff;border-radius:4px;padding:1px 6px;font-size:0.7rem;margin-left:8px;">URGENTE</span>':''}
+          <span style="background:#f1f5f9;border-radius:4px;padding:1px 8px;font-size:0.75rem;margin-left:6px;">${esc(t.categoria)}</span>
+        </div>
+        <div class="tarea-actions">
+          <button class="btn btn-sm btn-primary" onclick="editTarea(${t.id})" title="Editar">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTarea(${t.id})" title="Eliminar">🗑️</button>
+        </div>
+      </div>
+      ${t.descripcion?`<p style="color:#475569;font-size:0.9rem;margin:8px 0;">${esc(t.descripcion)}</p>`:''}
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+        <span class="badge" style="background:${estColor[t.estado]||'#94a3b8'};color:#fff;">${estLabel[t.estado]||cap(t.estado)}</span>
+        <span style="font-size:0.8rem;color:#94a3b8;">Creado: ${fmtDate(t.fecha_creacion)}</span>
+        ${t.fecha_actualizacion!==t.fecha_creacion?`<span style="font-size:0.8rem;color:#94a3b8;">Actualizado: ${fmtDate(t.fecha_actualizacion)}</span>`:''}
+      </div>
+      ${t.observaciones?`<div style="margin-top:8px;padding:8px;background:#fffbeb;border-radius:6px;font-size:0.85rem;color:#92400e;">📝 ${esc(t.observaciones)}</div>`:''}
+    </div>`).join('');
+  checkUrgentCount();
+}
+
+function nuevaTarea() {
+  openModal('📋 Nueva Tarea', `
+    <div class="form-group"><label>Título</label><input type="text" id="modal-campo1" required placeholder="Título de la tarea"></div>
+    <div class="form-group"><label>Descripción</label><textarea id="modal-campo2" rows="3" style="width:100%;padding:8px;border:2px solid #e2e8f0;border-radius:6px;resize:vertical;" placeholder="Descripción detallada..."></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Categoría</label><select id="modal-campo3">
+        <option value="General">General</option><option value="Deposito">Depósito</option><option value="Sprinter">Sprinter</option>
+      </select></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px;margin-top:24px;">
+        <input type="checkbox" id="modal-campo4" style="width:20px;height:20px;"> ⚠️ Marcar como Urgente
+      </label></div>
+    </div>
+  `, async () => {
+    const titulo = document.getElementById('modal-campo1').value.trim();
+    if (!titulo) { showToast('Título requerido', 'error'); return; }
+    const res = await api('POST', '/api/tareas', {
+      titulo, descripcion: document.getElementById('modal-campo2').value.trim(),
+      categoria: document.getElementById('modal-campo3').value,
+      urgente: document.getElementById('modal-campo4').checked
+    });
+    if (res.ok) { closeModal(); showToast('Tarea creada', 'success'); loadTareas(); }
+  });
+}
+
+async function editTarea(id) {
+  const t = tareasData.find(x => x.id === id); if (!t) return;
+  openModal('✏️ Editar Tarea', `
+    <input type="hidden" id="modal-edit-id" value="${t.id}">
+    <div class="form-group"><label>Título</label><input type="text" id="modal-campo1" value="${esc(t.titulo)}"></div>
+    <div class="form-group"><label>Descripción</label><textarea id="modal-campo2" rows="3" style="width:100%;padding:8px;border:2px solid #e2e8f0;border-radius:6px;resize:vertical;">${esc(t.descripcion)}</textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Categoría</label><select id="modal-campo3">
+        <option value="General" ${t.categoria==='General'?'selected':''}>General</option>
+        <option value="Deposito" ${t.categoria==='Deposito'?'selected':''}>Depósito</option>
+        <option value="Sprinter" ${t.categoria==='Sprinter'?'selected':''}>Sprinter</option>
+      </select></div>
+      <div class="form-group"><label>Estado</label><select id="modal-campo5">
+        <option value="pendiente" ${t.estado==='pendiente'?'selected':''}>Pendiente</option>
+        <option value="en-proceso" ${t.estado==='en-proceso'?'selected':''}>En Proceso</option>
+        <option value="finalizado" ${t.estado==='finalizado'?'selected':''}>Finalizado</option>
+      </select></div>
+    </div>
+    <div class="form-group"><label style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="modal-campo4" style="width:20px;height:20px;" ${t.urgente?'checked':''}> ⚠️ Urgente
+    </label></div>
+    <div class="form-group"><label>Observaciones</label><textarea id="modal-campo6" rows="3" style="width:100%;padding:8px;border:2px solid #e2e8f0;border-radius:6px;resize:vertical;">${esc(t.observaciones)}</textarea></div>
+  `, async () => {
+    await api('PUT', `/api/tareas/${document.getElementById('modal-edit-id').value}`, {
+      titulo: document.getElementById('modal-campo1').value.trim(),
+      descripcion: document.getElementById('modal-campo2').value.trim(),
+      categoria: document.getElementById('modal-campo3').value,
+      estado: document.getElementById('modal-campo5').value,
+      urgente: document.getElementById('modal-campo4').checked,
+      observaciones: document.getElementById('modal-campo6').value.trim()
+    });
+    closeModal(); showToast('Tarea actualizada', 'success'); loadTareas();
+  });
+}
+
+async function deleteTarea(id) { if (!confirm('¿Eliminar tarea?')) return; await api('DELETE', `/api/tareas/${id}`); showToast('Eliminada', 'success'); loadTareas(); }
 
 // ==================== MODAL ====================
 function setupModal() {

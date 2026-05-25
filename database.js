@@ -36,6 +36,30 @@ const CREATE_TABLES = `
     estado TEXT NOT NULL DEFAULT 'pendiente',
     comentarios TEXT NOT NULL DEFAULT ''
   );
+  CREATE TABLE IF NOT EXISTS logistica (
+    id SERIAL PRIMARY KEY,
+    cliente TEXT NOT NULL,
+    fecha TEXT NOT NULL,
+    horas DOUBLE PRECISION NOT NULL DEFAULT 0,
+    valor_hora DOUBLE PRECISION NOT NULL DEFAULT 0,
+    ayudante TEXT NOT NULL DEFAULT '',
+    total DOUBLE PRECISION NOT NULL DEFAULT 0,
+    estado TEXT NOT NULL DEFAULT 'pendiente',
+    observaciones TEXT NOT NULL DEFAULT '',
+    creado_por INTEGER NOT NULL REFERENCES usuarios(id)
+  );
+  CREATE TABLE IF NOT EXISTS tareas (
+    id SERIAL PRIMARY KEY,
+    titulo TEXT NOT NULL,
+    descripcion TEXT NOT NULL DEFAULT '',
+    categoria TEXT NOT NULL DEFAULT 'General',
+    estado TEXT NOT NULL DEFAULT 'pendiente',
+    urgente INTEGER NOT NULL DEFAULT 0,
+    observaciones TEXT NOT NULL DEFAULT '',
+    fecha_creacion TEXT NOT NULL,
+    fecha_actualizacion TEXT NOT NULL,
+    creado_por INTEGER NOT NULL REFERENCES usuarios(id)
+  );
   CREATE TABLE IF NOT EXISTS pedido_items (
     id SERIAL PRIMARY KEY,
     pedido_id INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,

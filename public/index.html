@@ -59,6 +59,15 @@
           <span class="nav-icon">🔑</span>
           <span>Usuarios</span>
         </a>
+        <a href="#" class="nav-item hidden" data-section="logistica" id="nav-logistica">
+          <span class="nav-icon">🚛</span>
+          <span>Logística</span>
+        </a>
+        <a href="#" class="nav-item hidden" data-section="tareas" id="nav-tareas">
+          <span class="nav-icon">📋</span>
+          <span>Planificación</span>
+          <span class="hidden" id="urgent-badge" style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:0.7rem;margin-left:6px;font-weight:700;">0</span>
+        </a>
       </nav>
       <div class="sidebar-footer">
         <div class="user-info">
@@ -272,6 +281,42 @@
             <tbody id="usuarios-body"></tbody>
           </table>
         </div>
+      </section>
+      <!-- LOGISTICA (solo admin) -->
+      <section id="section-logistica" class="section">
+        <div class="section-header">
+          <h1>🚛 Logística</h1>
+          <button class="btn btn-primary" id="btn-nueva-logistica">+ Nuevo Registro</button>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Cliente</th><th>Fecha</th><th>Horas</th><th>$/Hora</th><th>Ayudante</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="logistica-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAREAS / PLANIFICACION (solo admin) -->
+      <section id="section-tareas" class="section">
+        <div class="section-header">
+          <h1>📋 Planificación</h1>
+          <div style="display:flex;gap:8px;">
+            <select id="tarea-filter-estado" style="padding:8px 12px;border:2px solid #e2e8f0;border-radius:6px;font-size:0.9rem;">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="en-proceso">En Proceso</option>
+              <option value="finalizado">Finalizado</option>
+            </select>
+            <select id="tarea-filter-cat" style="padding:8px 12px;border:2px solid #e2e8f0;border-radius:6px;font-size:0.9rem;">
+              <option value="">Todas las categorías</option>
+              <option value="Deposito">Depósito</option>
+              <option value="Sprinter">Sprinter</option>
+              <option value="General">General</option>
+            </select>
+            <button class="btn btn-primary" id="btn-nueva-tarea">+ Nueva Tarea</button>
+          </div>
+        </div>
+        <div id="tareas-container" class="tareas-grid"></div>
       </section>
     </main>
   </div>

@@ -277,6 +277,83 @@ app.put('/api/pedidos/:id/comentarios', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ==================== LOGISTICA (solo admin) ====================
+
+app.get('/api/logistica', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const items = await db.all('SELECT l.*, u.nombre as creador_nombre FROM logistica l JOIN usuarios u ON l.creado_por = u.id ORDER BY l.fecha DESC, l.id DESC');
+    res.json(items);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/logistica', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { cliente, fecha, horas, valor_hora, ayudante, observaciones } = req.body;
+    if (!cliente) return res.status(400).json({ error: 'Cliente requerido' });
+    const total = (horas || 0) * (valor_hora || 0);
+    const result = await db.run('INSERT INTO logistica (cliente, fecha, horas, valor_hora, ayudante, total, estado, observaciones, creado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [cliente, fecha || new Date().toISOString().split('T')[0], horas || 0, valor_hora || 0, ayudante || '', total, 'pendiente', observaciones || '', req.user.id]);
+    res.json({ id: result.lastInsertRowid, success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/logistica/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { cliente, fecha, horas, valor_hora, ayudante, observaciones, estado } = req.body;
+    const total = (horas || 0) * (valor_hora || 0);
+    await db.run('UPDATE logistica SET cliente=?, fecha=?, horas=?, valor_hora=?, ayudante=?, total=?, estado=?, observaciones=? WHERE id=?',
+      [cliente, fecha, horas, valor_hora, ayudante, total, estado || 'pendiente', observaciones || '', req.params.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/logistica/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try { await db.run('DELETE FROM logistica WHERE id = ?', [req.params.id]); res.json({ success: true }); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ==================== TAREAS (solo admin) ====================
+
+app.get('/api/tareas', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const tareas = await db.all('SELECT t.*, u.nombre as creador_nombre FROM tareas t JOIN usuarios u ON t.creado_por = u.id ORDER BY t.urgente DESC, t.fecha_creacion DESC');
+    res.json(tareas);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/tareas/urgent-count', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const result = await db.get("SELECT COUNT(*) as count FROM tareas WHERE urgente = 1 AND estado != 'finalizado'");
+    res.json({ count: result.count });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/tareas', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { titulo, descripcion, categoria, urgente } = req.body;
+    if (!titulo) return res.status(400).json({ error: 'Título requerido' });
+    const now = new Date().toISOString();
+    const result = await db.run('INSERT INTO tareas (titulo, descripcion, categoria, estado, urgente, observaciones, fecha_creacion, fecha_actualizacion, creado_por) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [titulo, descripcion || '', categoria || 'General', 'pendiente', urgente ? 1 : 0, '', now, now, req.user.id]);
+    res.json({ id: result.lastInsertRowid, success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put('/api/tareas/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { titulo, descripcion, categoria, estado, urgente, observaciones } = req.body;
+    const now = new Date().toISOString();
+    await db.run('UPDATE tareas SET titulo=?, descripcion=?, categoria=?, estado=?, urgente=?, observaciones=?, fecha_actualizacion=? WHERE id=?',
+      [titulo, descripcion, categoria, estado || 'pendiente', urgente ? 1 : 0, observaciones || '', now, req.params.id]);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/tareas/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try { await db.run('DELETE FROM tareas WHERE id = ?', [req.params.id]); res.json({ success: true }); }
+  catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ==================== REPORTES ====================
 
 app.get('/api/reportes/ventas', authMiddleware, async (req, res) => {

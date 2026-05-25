@@ -824,3 +824,52 @@ body {
     width: 100%;
   }
 }
+
+/* ==================== TAREAS ==================== */
+.tareas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+}
+
+.tarea-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  transition: box-shadow 0.2s;
+}
+
+.tarea-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.tarea-card.tarea-urgente {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  animation: pulse-urgent 2s infinite;
+}
+
+@keyframes pulse-urgent {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+}
+
+.tarea-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.tarea-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Logistica badges */
+.badge-en-proceso {
+  background: #dbeafe;
+  color: #1e40af;
+}
