@@ -80,6 +80,7 @@ function setupUI() {
   }
 
   document.getElementById('btn-logout').addEventListener('click', logout);
+  document.getElementById('mobile-logout-btn')?.addEventListener('click', logout);
   setupNavigation();
   setupAccordion();
   setupPedidoForm();
@@ -102,6 +103,10 @@ function setupNavigation() {
 
 function navigateTo(section) {
   state.currentSection = section;
+  // Update mobile header title
+  const titles = {'nuevo-pedido':'Nuevo Pedido','pedidos':'Pedidos','clientes':'Clientes','productos':'Productos','reportes':'Reportes','usuarios':'Usuarios','logistica':'Logística','tareas':'Planificación'};
+  const mobileTitle = document.getElementById('mobile-section-title');
+  if (mobileTitle) mobileTitle.textContent = titles[section] || '';
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const navItem = document.querySelector(`.nav-item[data-section="${section}"]`);
   if (navItem) navItem.classList.add('active');
