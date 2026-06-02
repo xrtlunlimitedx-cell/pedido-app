@@ -87,8 +87,16 @@ function setupUI() {
 }
 
 function setupNavigation() {
-  document.querySelectorAll('.nav-item:not(.hidden)').forEach(item => {
-    item.addEventListener('click', (e) => { e.preventDefault(); navigateTo(item.dataset.section); });
+  // Hamburger menu
+  const hamburger = document.getElementById('hamburger-btn');
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const closeSidebar = () => { sidebar.classList.remove('sidebar-open'); overlay.classList.remove('active'); };
+  hamburger.addEventListener('click', () => { sidebar.classList.toggle('sidebar-open'); overlay.classList.toggle('active'); });
+  overlay.addEventListener('click', closeSidebar);
+
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', (e) => { e.preventDefault(); navigateTo(item.dataset.section); closeSidebar(); });
   });
 }
 

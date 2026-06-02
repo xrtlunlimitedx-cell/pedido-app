@@ -770,40 +770,226 @@ body {
   color: #64748b;
 }
 
+/* ==================== MOBILE HEADER ==================== */
+.mobile-header {
+  display: none;
+}
+
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
+  /* Mobile Header */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 12px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+  }
+
+  .mobile-header h2 {
+    font-size: 1.1rem;
+    flex: 1;
+  }
+
+  /* Sidebar: hidden off-screen by default */
   .sidebar {
-    width: 60px;
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 150;
   }
-  
-  .sidebar-header h2 {
-    font-size: 0.8rem;
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
   }
-  
-  .nav-item span:not(.nav-icon) {
-    display: none;
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 140;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
   }
-  
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Main content: full width */
   .main-content {
-    margin-left: 60px;
-    padding: 16px;
+    margin-left: 0;
+    padding: 16px 12px;
   }
-  
+
+  /* Section headers */
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .section-header h1 {
+    font-size: 1.3rem;
+  }
+
+  /* Item form: stack vertically */
   .item-form-row {
     flex-direction: column;
+    gap: 10px;
   }
-  
+
   .item-form-row .form-group {
     width: 100%;
   }
-  
+
   .item-form-row .form-group input,
   .item-form-row .form-group select {
     width: 100%;
   }
-  
+
+  .item-form-row .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Tables: smaller padding */
+  .data-table th,
+  .data-table td {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
+  .items-table th,
+  .items-table td {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  /* Form actions: stack */
   .form-actions {
     flex-direction: column;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Modal: full width */
+  .modal {
+    width: 95%;
+    max-width: none;
+    border-radius: 8px;
+  }
+
+  .modal-lg {
+    max-width: none;
+  }
+
+  /* Login card */
+  .login-card {
+    margin: 16px;
+    padding: 24px 20px;
+  }
+
+  /* Toast */
+  .toast {
+    min-width: auto;
+    font-size: 0.85rem;
+  }
+
+  .toast-container {
+    right: 10px;
+    left: 10px;
+  }
+
+  /* Tareas grid: single column */
+  .tareas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Accordion */
+  .accordion-header {
+    padding: 14px 16px;
+  }
+
+  .accordion-panel {
+    padding: 0 16px 16px;
+  }
+
+  /* Client card */
+  .client-card {
+    padding: 12px 14px;
+  }
+
+  /* Action buttons: smaller */
+  .btn-sm {
+    padding: 3px 7px;
+    font-size: 0.75rem;
+  }
+
+  .actions-cell .actions-row {
+    gap: 2px;
+  }
+
+  /* Pedido print */
+  .pedido-print-info {
+    grid-template-columns: 1fr;
+  }
+
+  .pedido-print-footer {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* Reportes filters */
+  .reportes-filtros {
+    flex-direction: column !important;
+  }
+
+  /* Section header with flex controls */
+  #section-tareas .section-header > div {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 12px 8px;
+  }
+
+  .section-header h1 {
+    font-size: 1.1rem;
+  }
+
+  .login-logo {
+    font-size: 2.5rem;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    padding: 2px 7px;
   }
 }
 
