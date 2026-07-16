@@ -2,10 +2,18 @@ const state = {
   token: localStorage.getItem('token') || null,
   user: JSON.parse(localStorage.getItem('user') || 'null'),
   clientes: [], productos: [], usuarios: [],
-  pedidoItems: [], clienteSeleccionado: null, currentSection: 'nuevo-pedido'
+  pedidoItems: [], clienteSeleccionado: null, currentSection: 'nuevo-pedido',
+  editandoPedidoId: null  // null = modo creación | ID = modo edición de ese pedido
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Estado inconsistente: hay token pero no hay datos de usuario.
+  // (pasa si se invalidó la sesión en el server, p.ej. cold-start de Render)
+  // En lugar de crashear, limpiamos y mandamos a login.
+  if (state.token && !state.user) {
+    state.token = null;
+    localStorage.removeItem('token');
+  }
   if (state.token) { showApp(); } else { showLogin(); }
 });
 
@@ -345,23 +353,9 @@ async function editPedido(id) {
     }));
     seleccionarCliente(pedido.cliente_id);
     renderPedidoItems();
-    // Change save button to update mode
-    const btnSave = document.getElementById('btn-guardar-pedido');
-    btnSave.textContent = '💾 Actualizar Pedido';
-    btnSave.onclick = async () => {
-      if (!state.clienteSeleccionado) { showToast('Seleccione cliente', 'error'); return; }
-      if (!state.pedidoItems.length) { showToast('Agregue items', 'error'); return; }
-      try {
-        const res = await api('PUT', `/api/pedidos/${id}`, {
-          cliente_id: state.clienteSeleccionado.id,
-          items: state.pedidoItems.map(it => ({ producto_id: it.producto_id, cantidad_bultos: it.cantidad_bultos, unidades_por_bulto: it.unidades_por_bulto, precio_unidad: it.precio_unidad })),
-          comentarios: ''
-        });
-        const data = await res.json();
-        if (data.success) { showToast('Pedido actualizado', 'success'); cancelarPedido(); navigateTo('pedidos'); }
-        else showToast(data.error || 'Error', 'error');
-      } catch { showToast('Error de conexión', 'error'); }
-    };
+    // Activar modo edición: el flag le dice al handler unificado que haga PUT en vez de POST
+    state.editandoPedidoId = id;
+    document.getElementById('btn-guardar-pedido').textContent = '💾 Actualizar Pedido';
     showToast(`Editando PED-${String(id).padStart(4,'0')}`, 'info');
   } catch {}
 }
@@ -450,16 +444,30 @@ function renderPedidoItems() {
 async function guardarPedido() {
   if (!state.clienteSeleccionado) { showToast('Seleccione cliente', 'error'); return; }
   if (!state.pedidoItems.length) { showToast('Agregue items', 'error'); return; }
+  const payload = {
+    cliente_id: state.clienteSeleccionado.id,
+    items: state.pedidoItems.map(it => ({ producto_id: it.producto_id, cantidad_bultos: it.cantidad_bultos, unidades_por_bulto: it.unidades_por_bulto, precio_unidad: it.precio_unidad }))
+  };
   try {
-    const res = await api('POST', '/api/pedidos', { cliente_id: state.clienteSeleccionado.id, items: state.pedidoItems.map(it => ({ producto_id: it.producto_id, cantidad_bultos: it.cantidad_bultos, unidades_por_bulto: it.unidades_por_bulto, precio_unidad: it.precio_unidad })) });
-    const data = await res.json();
-    if (data.success) { showToast(`Pedido PED-${String(data.id).padStart(4,'0')} guardado`, 'success'); cancelarPedido(); }
-    else showToast(data.error || 'Error', 'error');
+    let res, data;
+    if (state.editandoPedidoId) {
+      // Modo edición: PUT al pedido existente (no crea duplicado)
+      res = await api('PUT', `/api/pedidos/${state.editandoPedidoId}`, payload);
+      data = await res.json();
+      if (data.success) { showToast(`Pedido PED-${String(state.editandoPedidoId).padStart(4,'0')} actualizado`, 'success'); cancelarPedido(); navigateTo('pedidos'); }
+      else showToast(data.error || 'Error', 'error');
+    } else {
+      // Modo creación: POST de un pedido nuevo
+      res = await api('POST', '/api/pedidos', payload);
+      data = await res.json();
+      if (data.success) { showToast(`Pedido PED-${String(data.id).padStart(4,'0')} guardado`, 'success'); cancelarPedido(); }
+      else showToast(data.error || 'Error', 'error');
+    }
   } catch { showToast('Error de conexión', 'error'); }
 }
 
 function cancelarPedido() {
-  state.pedidoItems = []; state.clienteSeleccionado = null;
+  state.pedidoItems = []; state.clienteSeleccionado = null; state.editandoPedidoId = null;
   document.getElementById('cliente-seleccionado').classList.add('hidden');
   document.getElementById('buscar-cliente').value = ''; document.getElementById('buscar-cliente').disabled = false;
   document.getElementById('items-body').innerHTML = '';
@@ -467,6 +475,8 @@ function cancelarPedido() {
   document.getElementById('item-producto').value = ''; document.getElementById('item-bultos').value = 1;
   document.getElementById('item-unidades').value = 1; document.getElementById('item-precio').value = '';
   document.getElementById('item-total-preview').value = '$ 0.00';
+  // Restaurar botón a modo creación (puede haber quedado en "Actualizar" tras editar)
+  document.getElementById('btn-guardar-pedido').textContent = '✅ Guardar Pedido';
 }
 
 // ==================== REPORTES ====================
