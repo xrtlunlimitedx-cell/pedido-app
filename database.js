@@ -166,8 +166,11 @@ if (isProduction) {
   sqlite.pragma('foreign_keys = ON');
 
   sqlite.exec(CREATE_TABLES.replace(/SERIAL PRIMARY KEY/g, 'INTEGER PRIMARY KEY AUTOINCREMENT'));
-  sqlite.exec(SEED_USUARIOS.replace(/ON CONFLICT.*DO NOTHING;/g, ';'));
-  
+
+  // Seed solo si la tabla está vacía (evita UNIQUE constraint al reiniciar)
+  const usuarioCount = sqlite.prepare('SELECT COUNT(*) as count FROM usuarios').get();
+  if (usuarioCount.count === 0) sqlite.exec(SEED_USUARIOS.replace(/ON CONFLICT.*DO NOTHING;/g, ';'));
+
   const clienteCount = sqlite.prepare('SELECT COUNT(*) as count FROM clientes').get();
   if (clienteCount.count === 0) sqlite.exec(SEED_CLIENTES);
 

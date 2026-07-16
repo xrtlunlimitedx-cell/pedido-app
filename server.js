@@ -375,12 +375,14 @@ app.get('/api/reportes/ventas', authMiddleware, async (req, res) => {
       params.push(mes + '%');
     }
 
-    if (vendedor_id) {
-      query += ' AND p.vendedor_id = ?';
-      params.push(vendedor_id);
-    } else if (req.user.rol !== 'admin') {
+    if (req.user.rol !== 'admin') {
+      // Vendedor: SIEMPRE sus propias ventas, ignore lo que mande en ?vendedor_id=
       query += ' AND p.vendedor_id = ?';
       params.push(req.user.id);
+    } else if (vendedor_id) {
+      // Admin: puede filtrar por un vendedor específico
+      query += ' AND p.vendedor_id = ?';
+      params.push(vendedor_id);
     }
 
     query += ' ORDER BY p.fecha DESC';
