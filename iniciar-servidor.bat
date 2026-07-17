@@ -48,6 +48,36 @@ if not defined PORT set "PORT=3000"
 echo [OK] Puerto: %PORT%
 
 REM ------------------------------------------------------------
+REM 3b) VERIFICAR QUE EL PUERTO NO ESTE OCUPADO
+REM     Si un server viejo quedo colgado, node server.js fallaria
+REM     silenciosamente (EADDRINUSE) y usarias la version vieja.
+REM ------------------------------------------------------------
+netstat -ano | findstr "LISTENING" | findstr ":%PORT% " >nul 2>nul
+if %errorlevel%==0 (
+    echo.
+    echo [ALERTA] El puerto %PORT% ya esta en uso por otro proceso.
+    echo          Esto suele ser un servidor viejo que quedo colgado.
+    echo.
+    netstat -ano | findstr "LISTENING" | findstr ":%PORT% "
+    echo.
+    echo          Intentando liberar el puerto automaticamente...
+    for /f "tokens=5" %%p in ('netstat -ano ^| findstr "LISTENING" ^| findstr ":%PORT% "') do (
+        taskkill /F /PID %%p >nul 2>nul
+    )
+    timeout /t 2 /nobreak >nul
+    netstat -ano | findstr "LISTENING" | findstr ":%PORT% " >nul 2>nul
+    if %errorlevel%==0 (
+        echo.
+        echo [ERROR] No se pudo liberar el puerto %PORT%.
+        echo         Reinicia la PC para matar el proceso colgado y vuelve a probar.
+        echo.
+        pause
+        exit /b 1
+    )
+    echo [OK] Puerto %PORT% liberado.
+)
+
+REM ------------------------------------------------------------
 REM 4) Instalar dependencias si falta node_modules
 REM ------------------------------------------------------------
 if not exist "node_modules" (

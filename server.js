@@ -356,55 +356,112 @@ app.delete('/api/tareas/:id', authMiddleware, adminMiddleware, async (req, res) 
 
 // ==================== REPORTES ====================
 
+// Consulta de reporte compartida entre el endpoint JSON y el endpoint PDF.
+// Recibe el objeto user (de la sesión) para respetar permisos:
+//  - vendedor: siempre ve solo sus ventas (ignora vendedor_id del query)
+//  - admin: puede filtrar por vendedor_id o ver todos
+async function getReporteVentas({ mes, vendedor_id, user, incluirItems = false }) {
+  let query = `
+    SELECT p.id, p.fecha, p.total, p.estado,
+           c.nombre as cliente_nombre,
+           u.nombre as vendedor_nombre, u.id as vendedor_id
+    FROM pedidos p
+    JOIN clientes c ON p.cliente_id = c.id
+    JOIN usuarios u ON p.vendedor_id = u.id
+    WHERE 1=1
+  `;
+  let params = [];
+
+  if (mes) {
+    query += ' AND p.fecha LIKE ?';
+    params.push(mes + '%');
+  }
+
+  if (user.rol !== 'admin') {
+    // Vendedor: SIEMPRE sus propias ventas, ignore lo que mande en ?vendedor_id=
+    query += ' AND p.vendedor_id = ?';
+    params.push(user.id);
+  } else if (vendedor_id) {
+    // Admin: puede filtrar por un vendedor específico
+    query += ' AND p.vendedor_id = ?';
+    params.push(vendedor_id);
+  }
+
+  query += ' ORDER BY p.fecha DESC';
+  const pedidos = await db.all(query, params);
+
+  // Desglose de items: solo se carga si el caller lo pide (endpoint PDF).
+  // Se hace en una sola consulta y se reparte por pedido para evitar N queries.
+  if (incluirItems && pedidos.length > 0) {
+    const ids = pedidos.map(p => p.id);
+    const placeholders = ids.map(() => '?').join(',');
+    const items = await db.all(
+      `SELECT pi.pedido_id, pi.cantidad_bultos, pi.unidades_por_bulto, pi.precio_unidad, pi.total,
+              pr.nombre as producto_nombre
+       FROM pedido_items pi
+       JOIN productos pr ON pi.producto_id = pr.id
+       WHERE pi.pedido_id IN (${placeholders})
+       ORDER BY pi.pedido_id, pi.id`,
+      ids
+    );
+    const itemsPorPedido = {};
+    items.forEach(it => {
+      if (!itemsPorPedido[it.pedido_id]) itemsPorPedido[it.pedido_id] = [];
+      itemsPorPedido[it.pedido_id].push(it);
+    });
+    pedidos.forEach(p => { p.items = itemsPorPedido[p.id] || []; });
+  }
+
+  const totalGeneral = pedidos.reduce((sum, p) => sum + Number(p.total), 0);
+  const cantidadPedidos = pedidos.length;
+
+  // Totales por vendedor (solo admin)
+  let porVendedor = [];
+  if (user.rol === 'admin') {
+    const vendedorMap = {};
+    pedidos.forEach(p => {
+      if (!vendedorMap[p.vendedor_nombre]) vendedorMap[p.vendedor_nombre] = { nombre: p.vendedor_nombre, total: 0, cantidad: 0 };
+      vendedorMap[p.vendedor_nombre].total += Number(p.total);
+      vendedorMap[p.vendedor_nombre].cantidad++;
+    });
+    porVendedor = Object.values(vendedorMap).sort((a, b) => b.total - a.total);
+  }
+
+  return { pedidos, totalGeneral, cantidadPedidos, porVendedor };
+}
+
 app.get('/api/reportes/ventas', authMiddleware, async (req, res) => {
   try {
     const { mes, vendedor_id } = req.query;
-    let query = `
-      SELECT p.id, p.fecha, p.total, p.estado,
-             c.nombre as cliente_nombre,
-             u.nombre as vendedor_nombre, u.id as vendedor_id
-      FROM pedidos p
-      JOIN clientes c ON p.cliente_id = c.id
-      JOIN usuarios u ON p.vendedor_id = u.id
-      WHERE 1=1
-    `;
-    let params = [];
-
-    if (mes) {
-      query += ' AND p.fecha LIKE ?';
-      params.push(mes + '%');
-    }
-
-    if (req.user.rol !== 'admin') {
-      // Vendedor: SIEMPRE sus propias ventas, ignore lo que mande en ?vendedor_id=
-      query += ' AND p.vendedor_id = ?';
-      params.push(req.user.id);
-    } else if (vendedor_id) {
-      // Admin: puede filtrar por un vendedor específico
-      query += ' AND p.vendedor_id = ?';
-      params.push(vendedor_id);
-    }
-
-    query += ' ORDER BY p.fecha DESC';
-    const pedidos = await db.all(query, params);
-
-    const totalGeneral = pedidos.reduce((sum, p) => sum + Number(p.total), 0);
-    const cantidadPedidos = pedidos.length;
-
-    // Totales por vendedor
-    let porVendedor = [];
-    if (req.user.rol === 'admin') {
-      const vendedorMap = {};
-      pedidos.forEach(p => {
-        if (!vendedorMap[p.vendedor_nombre]) vendedorMap[p.vendedor_nombre] = { nombre: p.vendedor_nombre, total: 0, cantidad: 0 };
-        vendedorMap[p.vendedor_nombre].total += Number(p.total);
-        vendedorMap[p.vendedor_nombre].cantidad++;
-      });
-      porVendedor = Object.values(vendedorMap).sort((a, b) => b.total - a.total);
-    }
-
-    res.json({ pedidos, totalGeneral, cantidadPedidos, porVendedor });
+    const reporte = await getReporteVentas({ mes, vendedor_id, user: req.user });
+    res.json(reporte);
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Export del reporte a PDF (solo admin)
+app.get('/api/reportes/ventas/pdf', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { mes, vendedor_id } = req.query;
+    const reporte = await getReporteVentas({ mes, vendedor_id, user: req.user, incluirItems: true });
+
+    if (reporte.cantidadPedidos === 0) {
+      return res.status(404).json({ error: 'No hay pedidos para exportar en este período' });
+    }
+
+    // Generar el PDF
+    const { generarReportePDF } = require('./pdfGenerator');
+    const doc = generarReportePDF(reporte, { mes, vendedor_id });
+
+    const mesArchivo = mes || 'todas';
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="ventas-${mesArchivo}.pdf"`);
+
+    doc.pipe(res);
+    doc.end();
+  } catch (err) {
+    console.error('Error generando PDF:', err);
+    res.status(500).json({ error: 'Error al generar el PDF' });
+  }
 });
 
 // ==================== USUARIOS (solo admin) ====================
