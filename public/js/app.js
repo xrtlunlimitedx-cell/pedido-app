@@ -489,8 +489,13 @@ function loadReportes() {
       sel.innerHTML = '<option value="">Todos</option>' + state.usuarios.map(u => `<option value="${u.id}">${esc(u.nombre)}</option>`).join('');
     });
     document.getElementById('filtro-vendedor-group').classList.remove('hidden');
+    // El botón de descarga PDF es exclusivo del admin
+    const btnPdf = document.getElementById('btn-descargar-pdf');
+    btnPdf.classList.remove('hidden');
+    btnPdf.onclick = descargarReportePDF;
   } else {
     document.getElementById('filtro-vendedor-group').classList.add('hidden');
+    document.getElementById('btn-descargar-pdf').classList.add('hidden');
   }
   document.getElementById('btn-generar-reporte').onclick = generarReporte;
   generarReporte();
@@ -506,6 +511,35 @@ async function generarReporte() {
     const data = await res.json();
     renderReportes(data);
   } catch { showToast('Error al generar reporte', 'error'); }
+}
+
+// Descarga el reporte actual como PDF (solo admin).
+// Refleja los mismos filtros (mes + vendedor) que el reporte en pantalla.
+async function descargarReportePDF() {
+  const mes = document.getElementById('reporte-mes').value;
+  const vendedor = document.getElementById('reporte-vendedor')?.value || '';
+  let url = `/api/reportes/ventas/pdf?mes=${mes}`;
+  if (vendedor) url += `&vendedor_id=${vendedor}`;
+  try {
+    const res = await fetch(url, { headers: authHeaders() });
+    if (res.status === 404) { showToast('No hay pedidos para exportar en este período', 'error'); return; }
+    if (res.status === 403) { showToast('Solo el admin puede exportar PDF', 'error'); return; }
+    if (!res.ok) { showToast('Error al generar el PDF', 'error'); return; }
+    // El navegador recibió un PDF binario (Blob)
+    const blob = await res.blob();
+    // Disparar la descarga con el nombre del mes
+    const nombreArchivo = `ventas-${mes || 'todas'}.pdf`;
+    const enlace = document.createElement('a');
+    enlace.href = window.URL.createObjectURL(blob);
+    enlace.download = nombreArchivo;
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    window.URL.revokeObjectURL(enlace.href);
+    showToast(`PDF descargado: ${nombreArchivo}`, 'success');
+  } catch {
+    showToast('Error de conexión al descargar el PDF', 'error');
+  }
 }
 
 function renderReportes(data) {
