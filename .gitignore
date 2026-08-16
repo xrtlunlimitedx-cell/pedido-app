@@ -3,3 +3,4 @@ pedidos.db
 pedidos.db-wal
 pedidos.db-shm
 .DS_Store
+.superpowers/
