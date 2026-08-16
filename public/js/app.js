@@ -280,7 +280,8 @@ function showPedidoDetail(pedido) {
       <div class="pedido-print-footer"><div class="firma-line">Firma del Vendedor</div><div class="firma-line">Firma del Cliente</div></div>
     </div>`;
   document.getElementById('pedido-detail-overlay').classList.remove('hidden');
-  document.getElementById('btn-imprimir-pedido').onclick = () => printPedido();
+  document.getElementById('btn-imprimir-ticket').onclick = () => printPedidoTermico(pedido);
+  document.getElementById('btn-imprimir-a4').onclick = () => printPedido();
   document.getElementById('pedido-detail-close').onclick = () => document.getElementById('pedido-detail-overlay').classList.add('hidden');
 }
 
