@@ -304,7 +304,7 @@ function printPedidoTermico(pedido) {
     @page { size: 58mm auto; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 58mm; }
-    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 9px; line-height: 1.4; color: #000; padding: 3mm 7mm 8mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 9px; line-height: 1.4; color: #000; padding: 1mm 7mm 8mm 4mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .barra { background: #000; color: #fff; font-weight: 700; padding: 4px 6px; text-align: center; }
     .barra-pedido { font-size: 10px; letter-spacing: 1px; }
     .barra-total { font-size: 11px; display: flex; justify-content: space-between; margin-top: 4px; padding: 4px 5px; }
