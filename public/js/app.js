@@ -304,7 +304,7 @@ function printPedidoTermico(pedido) {
     @page { size: 58mm auto; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 58mm; }
-    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 9px; line-height: 1.4; color: #000; padding: 3mm 5mm 8mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 9px; line-height: 1.4; color: #000; padding: 3mm 7mm 8mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .barra { background: #000; color: #fff; font-weight: 700; padding: 4px 6px; text-align: center; }
     .barra-pedido { font-size: 10px; letter-spacing: 1px; }
     .barra-total { font-size: 11px; display: flex; justify-content: space-between; margin-top: 4px; padding: 4px 5px; }
@@ -315,7 +315,7 @@ function printPedidoTermico(pedido) {
     .sep { border-top: 1px dashed #000; margin: 3px 0; }
     .item { margin: 2px 0; }
     .nombre { font-weight: 700; word-break: break-word; }
-    .linea { display: flex; justify-content: space-between; gap: 4px; }
+    .linea { display: flex; justify-content: space-between; gap: 4px; flex-wrap: wrap; }
     .firma { margin-top: 28px; text-align: center; }
     .firma-linea { border-top: 1.5px solid #000; padding-top: 3px; }
   `;
