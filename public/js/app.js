@@ -292,7 +292,7 @@ function printPedido() {
   win.document.close(); setTimeout(() => win.print(), 300);
 }
 
-// ===== Ticket térmico 58mm: página a medida, solo negro puro (sin ajustes al imprimir) =====
+// ===== Ticket térmico 80mm: página a medida, solo negro puro (sin ajustes al imprimir) =====
 function printPedidoTermico(pedido) {
   const num = String(pedido.id).padStart(4, '0');
   const items = pedido.items.map((it, i) => `
@@ -301,23 +301,23 @@ function printPedidoTermico(pedido) {
       <div class="linea"><span>${it.cantidad_bultos} bx ${it.unidades_por_bulto}u - $${fmtNum(it.precio_unidad)} c/u</span><span>$${fmtNum(it.total)}</span></div>
     </div>`).join('');
   const css = `
-    @page { size: 58mm auto; margin: 0; }
+    @page { size: 80mm auto; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 58mm; }
-    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 9px; line-height: 1.4; color: #000; padding: 1mm 7mm 8mm 4mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .barra { background: #000; color: #fff; font-weight: 700; padding: 4px 6px; text-align: center; }
-    .barra-pedido { font-size: 10px; letter-spacing: 1px; }
-    .barra-total { font-size: 11px; display: flex; justify-content: space-between; margin-top: 4px; padding: 4px 5px; }
-    .fecha { text-align: center; margin: 2px 0; }
-    .fila { display: flex; justify-content: space-between; gap: 4px; }
+    html, body { width: 80mm; }
+    body { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.4; color: #000; padding: 1.5mm 4mm 8mm 4mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .barra { background: #000; color: #fff; font-weight: 700; padding: 5px 8px; text-align: center; }
+    .barra-pedido { font-size: 14px; letter-spacing: 2px; }
+    .barra-total { font-size: 16px; display: flex; justify-content: space-between; margin-top: 5px; padding: 5px 6px; }
+    .fecha { text-align: center; margin: 3px 0; }
+    .fila { display: flex; justify-content: space-between; gap: 6px; }
     .fila .etiqueta { font-weight: 700; white-space: nowrap; }
     .fila .valor { text-align: right; word-break: break-word; }
-    .sep { border-top: 1px dashed #000; margin: 3px 0; }
-    .item { margin: 2px 0; }
+    .sep { border-top: 1px dashed #000; margin: 4px 0; }
+    .item { margin: 3px 0; }
     .nombre { font-weight: 700; word-break: break-word; }
-    .linea { display: flex; justify-content: space-between; gap: 4px; flex-wrap: wrap; }
-    .firma { margin-top: 28px; text-align: center; }
-    .firma-linea { border-top: 1.5px solid #000; padding-top: 3px; }
+    .linea { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+    .firma { margin-top: 34px; text-align: center; }
+    .firma-linea { border-top: 1.5px solid #000; padding-top: 4px; }
   `;
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido #${num}</title><style>${css}</style></head><body>
     <div class="barra barra-pedido">PEDIDO #${num}</div>
