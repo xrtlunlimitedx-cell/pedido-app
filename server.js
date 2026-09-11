@@ -8,7 +8,8 @@ const PORT = process.env.PORT || 3000;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'pedido-app-secret-2024';
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// no-cache = el navegador revalida siempre (ETag/304) para que los deploys se vean al recargar
+app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 
 // ==================== AUTH MIDDLEWARE ====================
 const sessions = {};
