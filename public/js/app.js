@@ -303,7 +303,10 @@ function printPedidoTermico(pedido) {
   const css = `
     @page { size: 80mm auto; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 80mm; }
+    /* En PC @page fija los 80mm exactos; en celular el ancho es fluido porque
+       el pipeline de impresión móvil impone su propio ancho de papel */
+    html { width: 80mm; }
+    body { width: 100%; max-width: 80mm; }
     body { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.4; color: #000; padding: 1.5mm 4mm 8mm 4mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .barra { background: #000; color: #fff; font-weight: 700; padding: 5px 8px; text-align: center; }
     .barra-pedido { font-size: 14px; letter-spacing: 2px; }
