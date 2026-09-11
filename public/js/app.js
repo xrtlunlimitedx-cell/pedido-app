@@ -318,6 +318,7 @@ function printPedidoTermico(pedido) {
     .linea { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
     .firma { margin-top: 34px; text-align: center; }
     .firma-linea { border-top: 1.5px solid #000; padding-top: 4px; }
+    .marca { margin-top: 6px; text-align: center; font-size: 8px; }
   `;
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido #${num}</title><style>${css}</style></head><body>
     <div class="barra barra-pedido">PEDIDO #${num}</div>
@@ -329,6 +330,7 @@ function printPedidoTermico(pedido) {
     ${items}
     <div class="barra barra-total"><span>TOTAL</span><span>$${fmtNum(pedido.total)}</span></div>
     <div class="firma"><div class="firma-linea">Firma del Cliente</div></div>
+    <div class="marca">· 80mm ·</div>
   </body></html>`;
   const win = window.open('', '_blank');
   win.document.write(html);
